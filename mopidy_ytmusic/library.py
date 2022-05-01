@@ -900,6 +900,11 @@ class YTMusicLibraryProvider(backend.LibraryProvider):
                     or song["artists"] is None
                 ):
                     songartists = artists
+                elif type(song["artists"]) is list:
+                    # handle case where we have a list of dictionaries like:
+                    #   [{'name':..., 'id':...}, ]
+                    songartists = [Artist(name=sa["name"])
+                                   for sa in song["artists"]]
                 else:
                     songartists = [Artist(name=song["artists"])]
                 self.TRACKS[song["videoId"]] = Track(
