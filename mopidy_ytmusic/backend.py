@@ -79,7 +79,8 @@ class YTMusicBackend(
                 self._refresh_auto_playlists, self._auto_playlist_refresh_rate
             )
             self._auto_playlist_refresh_timer.start()
-
+        # initialize player, then start timer to refresh periodically:
+        self._refresh_youtube_player()
         self._youtube_player_refresh_timer = RepeatingTimer(
             self._refresh_youtube_player, self._youtube_player_refresh_rate
         )

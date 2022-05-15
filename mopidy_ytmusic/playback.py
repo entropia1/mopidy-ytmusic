@@ -64,7 +64,7 @@ class YTMusicPlaybackProvider(backend.PlaybackProvider):
             logger.error('translate_uri error "%s"', str(e))
             return None
 
-    def _get_track(self, bId):
+    def _get_track(self, bId, reattempt=False):
         streams = self.backend.api.get_song(
             bId, signatureTimestamp=self.signatureTimestamp
         )["streamingData"]
@@ -165,11 +165,21 @@ class YTMusicPlaybackProvider(backend.PlaybackProvider):
             ):
                 # It's forbidden. Likely because the player url changed and we
                 # decoded the signature incorrectly.
-                # Refresh the player, log an error, and send back none.
-                logger.error(
-                    "YTMusic found forbidden URL. Updating player URL now."
-                )
-                self.backend._youtube_player_refresh_timer.now()
+                if reattempt:
+                    # Refresh the player, log an error, and send back none.
+                    logger.error(
+                        "YTMusic found forbidden URL. "
+                        "Reattempt failed: skipping track."
+                    )
+                    self.backend._youtube_player_refresh_timer.now()
+                else:
+                    # Refresh the player and try again
+                    logger.warning(
+                        "YTMusic found forbidden URL. "
+                        "Updating player URL for reattempt."
+                    )
+                    self.backend._youtube_player_refresh_timer.now(wait=True)
+                    return self._get_track(bId, reattempt=True)
             else:
                 # Return the decoded youtube url to mopidy for playback.
                 logger.debug("YTMusic found %s", url)
