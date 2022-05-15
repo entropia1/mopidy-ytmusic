@@ -6,13 +6,18 @@ class RepeatingTimer(Thread):
     def __init__(self, method, interval=0):
         Thread.__init__(self)
         self._stop_event = Event()
+        self._refresh_event = Event()
         self._interval = interval
         self._method = method
         self._force = 0
 
-    def now(self):
+    def now(self, wait=False):
         self._force = 1
+        if wait:
+            self._refresh_event.clear()
         self._stop_event.set()
+        if wait:
+            self._refresh_event.wait(timeout=60)
 
     def run(self):
         self._method()
@@ -23,7 +28,10 @@ class RepeatingTimer(Thread):
             elif self._force:
                 self._stop_event.clear()
                 self._force = 0
-            self._method()
+            try:
+                self._method()
+            finally:
+                self._refresh_event.set()
 
     def cancel(self):
         self._stop_event.set()
